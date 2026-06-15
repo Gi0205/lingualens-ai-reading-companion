@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LinguaLens AI Reading Companion</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">L</div>
+          <div>
+            <h1>LinguaLens</h1>
+            <p>AI Reading Companion</p>
+          </div>
+        </div>
+
+        <div class="toolbar" aria-label="Reader controls">
+          <label class="file-button">
+            <input id="fileInput" type="file" accept=".txt,.md,.markdown,.html,.pdf,application/pdf" />
+            <span data-i18n="upload">上传</span>
+          </label>
+          <button id="sampleButton" type="button" data-i18n="sample">示例</button>
+          <button id="resetBookButton" type="button" data-i18n="resetBook">重置本书</button>
+          <label class="compact-control">
+            <span data-i18n="fontSize">字号</span>
+            <input id="fontSize" type="range" min="16" max="24" value="18" />
+          </label>
+          <label class="compact-control">
+            <span data-i18n="autoExplain">自动解释</span>
+            <input id="autoExplain" type="checkbox" />
+          </label>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="reader-panel" aria-labelledby="readerTitle">
+          <div class="reader-header">
+            <div>
+              <p class="eyebrow">Reader</p>
+              <h2 id="readerTitle">未选择书籍</h2>
+            </div>
+            <div class="reader-stats">
+              <span id="wordCount">0 字</span>
+              <span id="noteCount">0 笔记</span>
+              <span id="highlightCount">0 高亮</span>
+              <span id="progressCount">0%</span>
+            </div>
+          </div>
+
+          <article id="reader" class="reader" tabindex="0">
+            <div class="empty-state">
+              <p data-i18n="emptyReader">上传 .txt / .md 文件，或打开示例文本开始阅读。</p>
+            </div>
+          </article>
+        </section>
+
+        <aside class="ai-panel" aria-label="AI chat panel">
+          <div class="ai-header">
+            <div>
+              <p class="eyebrow">AI Coach</p>
+              <h2 data-i18n="aiPanelTitle">讲解与对话</h2>
+            </div>
+            <div id="apiStatus" class="status-pill" data-i18n="checking">检查中</div>
+          </div>
+
+          <div class="model-row provider-row">
+            <label for="providerSelect" data-i18n="provider">服务商</label>
+            <select id="providerSelect">
+              <option value="deepseek">DeepSeek</option>
+              <option value="openai">OpenAI</option>
+            </select>
+          </div>
+
+          <div class="model-row">
+            <label for="modelInput" data-i18n="model">模型</label>
+            <input id="modelInput" type="text" value="deepseek-v4-flash" spellcheck="false" />
+          </div>
+
+          <div class="model-row">
+            <label for="uiLanguageSelect" data-i18n="uiLanguage">界面语言</label>
+            <select id="uiLanguageSelect">
+              <option value="zh-CN">中文</option>
+              <option value="ja">日本語</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+
+          <div class="model-row">
+            <label for="languageSelect" data-i18n="outputLanguage">讲解语言</label>
+            <select id="languageSelect">
+              <option value="zh-CN">中文</option>
+              <option value="ja">日本語</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+
+          <div id="accessCodeRow" class="model-row access-row hidden">
+            <label id="accessCodeLabel" for="accessCodeInput">访问码</label>
+            <input id="accessCodeInput" type="password" placeholder="在线 demo 可选" autocomplete="off" />
+          </div>
+
+          <section class="selection-card" aria-live="polite">
+            <div class="selection-card-header">
+              <span data-i18n="currentSelection">当前选中</span>
+              <button id="clearSelection" type="button" data-i18n="clear">清空</button>
+            </div>
+            <p id="selectedText" class="selected-text">还没有选中文本。</p>
+            <div class="quick-actions">
+              <button id="explainButton" type="button" data-i18n="explain">解释</button>
+              <button id="translateButton" type="button" data-i18n="translate">翻译</button>
+              <button id="summarizeButton" type="button" data-i18n="summarizeContext">总结上下文</button>
+              <button id="highlightButton" type="button" data-i18n="highlight">高亮</button>
+              <button id="saveNoteButton" type="button" data-i18n="save">保存</button>
+            </div>
+          </section>
+
+          <div class="panel-actions" aria-label="Workspace actions">
+            <button id="clearChatButton" type="button" data-i18n="clearChat">清空聊天</button>
+            <button id="clearNotesButton" type="button" data-i18n="clearNotes">清空笔记</button>
+            <button id="exportNotesButton" type="button" data-i18n="exportNotes">导出笔记</button>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="AI panel tabs">
+            <button id="chatTab" class="tab active" type="button" role="tab" aria-selected="true" data-i18n="chat">聊天</button>
+            <button id="notesTab" class="tab" type="button" role="tab" aria-selected="false" data-i18n="notes">笔记</button>
+          </div>
+
+          <section id="chatView" class="chat-view" role="tabpanel" aria-labelledby="chatTab">
+            <div id="messages" class="messages" aria-live="polite"></div>
+            <form id="chatForm" class="chat-form">
+              <textarea
+                id="chatInput"
+                rows="3"
+                placeholder="继续追问当前文本、章节观点或术语含义"
+                data-i18n-placeholder="chatPlaceholder"
+              ></textarea>
+              <button id="sendButton" type="submit" data-i18n="send">发送</button>
+            </form>
+          </section>
+
+          <section id="notesView" class="notes-view hidden" role="tabpanel" aria-labelledby="notesTab">
+            <div id="notesList" class="notes-list"></div>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div id="selectionMenu" class="selection-menu hidden" role="menu">
+      <button id="menuExplain" type="button" role="menuitem" data-i18n="explain">解释</button>
+      <button id="menuTranslate" type="button" role="menuitem" data-i18n="translate">翻译</button>
+      <button id="menuHighlight" type="button" role="menuitem" data-i18n="highlight">高亮</button>
+      <button id="menuSave" type="button" role="menuitem" data-i18n="save">保存</button>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
