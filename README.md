@@ -17,11 +17,13 @@ https://github.com/Gi0205/lingualens-ai-reading-companion
 - Select words, sentences, or paragraphs and generate AI explanations.
 - Translate selected text with stricter prompts that avoid unnecessary reasoning sections.
 - Summarize nearby context or summarize the whole uploaded document.
+- Guide users to select a specific chapter or section when they ask for detailed analysis beyond the provided text.
 - Chat with the AI about the selected passage or current document.
-- Save notes with quote, context, model, provider, language, and AI explanation.
+- Save notes as quote-only or quote plus the matching AI explanation.
 - Highlight selected text and remove highlights by selecting the same highlight again.
 - Export notes as Markdown or DOCX.
 - Switch UI language and explanation language independently.
+- Collapse the top control bar to keep more space for reading and AI chat.
 - Use DeepSeek or OpenAI through a backend API proxy.
 - Online demo supports an access code and simple rate limiting.
 
@@ -53,7 +55,7 @@ The API key is never stored in frontend code. In local development, it is read f
 Go to the project directory:
 
 ```powershell
-cd C:\Users\魏文君\ai-reading-companion
+cd C:\Users\your-name\ai-reading-companion
 ```
 
 Run with DeepSeek:
@@ -119,6 +121,7 @@ The prompts are designed to reduce hallucination:
 - If the text does not provide enough evidence, the assistant should say the information is not available in the text.
 - The assistant should not add background knowledge, examples, causes, author intent, or names unless they appear in the provided text.
 - Translation prompts ask for natural translation and avoid unnecessary literal-vs-natural comparison unless the user explicitly asks for it.
+- After a full-document summary, detailed chapter follow-ups are limited unless the chapter text is selected or otherwise included in the prompt.
 
 ## Security Notes
 

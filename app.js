@@ -271,6 +271,36 @@ const UI_TEXT = {
   },
 };
 
+Object.assign(UI_TEXT["zh-CN"], {
+  saveMode: "保存方式",
+  saveQuote: "只保存选文",
+  saveQuoteAi: "选文 + AI解释",
+  readingControls: "阅读控制",
+  hideControls: "收起工具栏",
+  showControls: "展开工具栏",
+  savedNoteNoExplanation: "已保存选文。当前没有匹配这段选文的 AI 解释。",
+});
+
+Object.assign(UI_TEXT.ja, {
+  saveMode: "保存方法",
+  saveQuote: "選択文のみ",
+  saveQuoteAi: "選択文 + AI解説",
+  readingControls: "読書コントロール",
+  hideControls: "ツールバーを閉じる",
+  showControls: "ツールバーを開く",
+  savedNoteNoExplanation: "選択文を保存しました。この選択文に対応するAI解説はまだありません。",
+});
+
+Object.assign(UI_TEXT.en, {
+  saveMode: "Save mode",
+  saveQuote: "Quote only",
+  saveQuoteAi: "Quote + AI",
+  readingControls: "Reading controls",
+  hideControls: "Hide controls",
+  showControls: "Show controls",
+  savedNoteNoExplanation: "Saved the quote. No matching AI explanation is attached yet.",
+});
+
 const sampleText = `# The Design of Everyday AI Tools
 
 When people read in a second language, the hardest part is not always vocabulary. Often the difficulty is holding several layers of meaning at the same time: the literal sentence, the author's intention, the cultural context, and the reader's own question.
@@ -318,6 +348,7 @@ const state = {
   readingPositions: {},
   apiReady: false,
   lastExplained: "",
+  toolbarCollapsed: false,
   isRequesting: false,
   pendingSelectionTimer: null,
   scrollSaveTimer: null,
@@ -343,6 +374,10 @@ const els = {
   accessCodeRow: document.querySelector("#accessCodeRow"),
   accessCodeLabel: document.querySelector("#accessCodeLabel"),
   accessCodeInput: document.querySelector("#accessCodeInput"),
+  controlStrip: document.querySelector("#controlStrip"),
+  controlBody: document.querySelector("#controlBody"),
+  toggleControlsButton: document.querySelector("#toggleControlsButton"),
+  noteSaveMode: document.querySelector("#noteSaveMode"),
   selectedText: document.querySelector("#selectedText"),
   clearSelection: document.querySelector("#clearSelection"),
   explainButton: document.querySelector("#explainButton"),
@@ -380,6 +415,7 @@ function init() {
   renderSelection();
   renderMessages();
   renderNotes();
+  renderControlsCollapsed();
   updateStats();
   checkApiStatus();
 
@@ -413,6 +449,7 @@ function bindEvents() {
   });
 
   els.clearSelection.addEventListener("click", clearSelection);
+  els.toggleControlsButton.addEventListener("click", toggleControls);
   els.explainButton.addEventListener("click", () => explainSelection("explain"));
   els.translateButton.addEventListener("click", () => explainSelection("translate"));
   els.summarizeButton.addEventListener("click", () => explainSelection("summarize"));
@@ -450,6 +487,7 @@ function bindEvents() {
     persistState();
   });
   els.languageSelect.addEventListener("change", persistState);
+  els.noteSaveMode.addEventListener("change", persistState);
   els.accessCodeInput.addEventListener("input", persistState);
 }
 
@@ -470,6 +508,8 @@ function loadState() {
     els.uiLanguageSelect.value = saved.uiLanguage || DEFAULT_UI_LANGUAGE;
     els.languageSelect.value = saved.outputLanguage || DEFAULT_OUTPUT_LANGUAGE;
     els.accessCodeInput.value = saved.accessCode || "";
+    els.noteSaveMode.value = saved.noteSaveMode || "quote";
+    state.toolbarCollapsed = Boolean(saved.toolbarCollapsed);
     els.fontSize.value = saved.fontSize || els.fontSize.value;
     els.autoExplain.checked = Boolean(saved.autoExplain);
     els.reader.style.fontSize = `${els.fontSize.value}px`;
@@ -492,6 +532,8 @@ function persistState() {
     uiLanguage: els.uiLanguageSelect.value,
     outputLanguage: els.languageSelect.value,
     accessCode: els.accessCodeInput.value.trim(),
+    noteSaveMode: els.noteSaveMode.value,
+    toolbarCollapsed: state.toolbarCollapsed,
     fontSize: els.fontSize.value,
     autoExplain: els.autoExplain.checked,
   };
@@ -544,7 +586,13 @@ function applyUILanguage() {
     en: t("outputEnglish"),
   });
 
+  setOptionLabels(els.noteSaveMode, {
+    quote: t("saveQuote"),
+    "quote-ai": t("saveQuoteAi"),
+  });
+
   applyAccessCodeLanguage();
+  renderControlsCollapsed();
   renderSelection();
   renderMessages();
   renderNotes();
@@ -555,6 +603,19 @@ function applyUILanguage() {
   } else {
     els.readerTitle.textContent = state.bookTitle || t("untitled");
   }
+}
+
+function toggleControls() {
+  state.toolbarCollapsed = !state.toolbarCollapsed;
+  renderControlsCollapsed();
+  persistState();
+}
+
+function renderControlsCollapsed() {
+  els.controlStrip.classList.toggle("collapsed", state.toolbarCollapsed);
+  els.controlBody.hidden = state.toolbarCollapsed;
+  els.toggleControlsButton.textContent = state.toolbarCollapsed ? t("showControls") : t("hideControls");
+  els.toggleControlsButton.setAttribute("aria-expanded", String(!state.toolbarCollapsed));
 }
 
 function applyAccessCodeLanguage() {
@@ -1210,6 +1271,15 @@ function handleReaderClick(event) {
   persistState();
 }
 
+function getSelectionSnapshot(mode) {
+  return {
+    taskMode: mode,
+    sourceText: state.selectedText,
+    sourceContext: state.selectedContext,
+    sourceBlockId: state.selectedBlockId,
+  };
+}
+
 async function explainSelection(mode, options = {}) {
   if (!state.selectedText) return;
   hideSelectionMenu();
@@ -1225,8 +1295,12 @@ async function explainSelection(mode, options = {}) {
     addMessage("user", `${label}：\n${state.selectedText}`);
   }
 
+  const sourceSnapshot = getSelectionSnapshot(mode);
   const prompt = buildPrompt(mode);
-  await askAssistant(prompt, { loadingText: t("loadingExplain", { language: getLanguageNativeName() }) });
+  await askAssistant(prompt, {
+    loadingText: t("loadingExplain", { language: getLanguageNativeName() }),
+    sourceSnapshot,
+  });
 }
 
 async function handleChatSubmit(event) {
@@ -1270,7 +1344,8 @@ function buildPrompt(mode, userText = "") {
       "Summarize only the nearby context and explain how it relates to the selected text.",
     bookSummary:
       "Summarize the whole uploaded document from the provided source text. Give the main topic, 3-6 key points, and any visible structure such as sections or questions.",
-    chat: `Answer the user's follow-up question: ${userText}`,
+    chat:
+      `Answer the user's follow-up question: ${userText}. If the user asks for detailed chapter, section, or paragraph analysis but that exact source text is not present in the selected text or nearby context, ask them to select that chapter/section in the reader and use Summarize context or Explain.`,
   };
 
   const isBookSummary = mode === "bookSummary";
@@ -1293,6 +1368,7 @@ function buildPrompt(mode, userText = "") {
       "- Use only the selected text, nearby context, document source text, and recent chat shown in this prompt.",
       "- Do not add background knowledge, examples, causes, author intent, names, or claims unless they are explicitly present in the provided text.",
       "- If the provided text does not contain enough evidence, say that the information is not available in the text.",
+      "- For detailed chapter or section follow-ups after a full-document summary, do not invent detail from the title or summary. Ask the user to select the relevant chapter/section text when the source is not present.",
       "- Keep important source-language terms only when useful for understanding.",
       "- Do not show chain-of-thought, hidden reasoning, or translation methodology.",
       "- For translation tasks, do not include a section comparing literal and natural translation unless the user explicitly asks for it.",
@@ -1329,6 +1405,7 @@ async function askAssistant(input, options = {}) {
 
   const loadingId = addMessage("assistant", options.loadingText || t("generating"), {
     pending: true,
+    sourceSnapshot: options.sourceSnapshot,
   });
   state.isRequesting = true;
   setBusy(true);
@@ -1453,6 +1530,12 @@ function addMessage(role, content, options = {}) {
     pending: Boolean(options.pending),
     createdAt: new Date().toISOString(),
   };
+  if (options.sourceSnapshot) {
+    message.taskMode = options.sourceSnapshot.taskMode || "";
+    message.sourceText = options.sourceSnapshot.sourceText || "";
+    message.sourceContext = options.sourceSnapshot.sourceContext || "";
+    message.sourceBlockId = options.sourceSnapshot.sourceBlockId || "";
+  }
   state.messages.push(message);
   renderMessages();
   persistState();
@@ -1490,7 +1573,8 @@ function renderMessages() {
 function saveCurrentNote() {
   if (!state.selectedText) return;
   hideSelectionMenu();
-  const latestAssistant = getLatestAssistantMessage();
+  const shouldAttachExplanation = els.noteSaveMode.value === "quote-ai";
+  const matchingAssistant = shouldAttachExplanation ? getMatchingAssistantExplanation() : null;
   state.notes.unshift({
     id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
     type: "selection-note",
@@ -1498,7 +1582,7 @@ function saveCurrentNote() {
     quote: state.selectedText,
     context: state.selectedContext,
     bookTitle: state.bookTitle,
-    explanation: latestAssistant?.content || "",
+    explanation: matchingAssistant?.content || "",
     provider: els.providerSelect.value,
     model: els.modelInput.value.trim() || DEFAULT_MODEL,
     uiLanguage: els.uiLanguageSelect.value,
@@ -1509,13 +1593,22 @@ function saveCurrentNote() {
   renderNotes();
   updateStats();
   persistState();
-  addMessage("system", t("savedNote"));
+  addMessage("system", shouldAttachExplanation && !matchingAssistant ? t("savedNoteNoExplanation") : t("savedNote"));
 }
 
-function getLatestAssistantMessage() {
+function getMatchingAssistantExplanation() {
+  const selectedText = normalizeWhitespace(state.selectedText);
+  const selectedContext = normalizeWhitespace(state.selectedContext).slice(0, 600);
   return [...state.messages]
     .reverse()
-    .find((message) => message.role === "assistant" && !message.pending && !looksLikeMojibake(message.content));
+    .find((message) => {
+      if (message.role !== "assistant" || message.pending || looksLikeMojibake(message.content)) return false;
+      if (!["explain", "translate", "summarize"].includes(message.taskMode)) return false;
+      if (normalizeWhitespace(message.sourceText) !== selectedText) return false;
+      if ((message.sourceBlockId || "") !== (state.selectedBlockId || "")) return false;
+      if (!selectedContext) return true;
+      return normalizeWhitespace(message.sourceContext).slice(0, 600) === selectedContext;
+    });
 }
 
 function saveHighlight() {

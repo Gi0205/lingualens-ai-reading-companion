@@ -35,64 +35,78 @@
         </div>
       </header>
 
-      <section class="control-strip" aria-label="Reading and AI controls">
-        <div class="control-grid">
-          <label class="control-field">
-            <span data-i18n="provider">Provider</span>
-            <select id="providerSelect">
-              <option value="deepseek">DeepSeek</option>
-              <option value="openai">OpenAI</option>
-            </select>
-          </label>
-          <label class="control-field model-field">
-            <span data-i18n="model">Model</span>
-            <input id="modelInput" type="text" value="deepseek-v4-flash" spellcheck="false" />
-          </label>
-          <label class="control-field">
-            <span data-i18n="uiLanguage">UI language</span>
-            <select id="uiLanguageSelect">
-              <option value="zh-CN">Chinese</option>
-              <option value="ja">Japanese</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label class="control-field">
-            <span data-i18n="outputLanguage">Explanation language</span>
-            <select id="languageSelect">
-              <option value="zh-CN">Chinese</option>
-              <option value="ja">Japanese</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label id="accessCodeRow" class="control-field access-row hidden">
-            <span id="accessCodeLabel">Access code</span>
-            <input id="accessCodeInput" type="password" placeholder="For online demo" autocomplete="off" />
-          </label>
+      <section id="controlStrip" class="control-strip" aria-label="Reading and AI controls">
+        <div class="control-strip-header">
+          <span data-i18n="readingControls">Reading controls</span>
+          <button id="toggleControlsButton" type="button" aria-controls="controlBody" aria-expanded="true">Hide controls</button>
         </div>
 
-        <div class="selection-toolbar" aria-live="polite">
-          <div class="selection-preview">
-            <div class="selection-preview-header">
-              <span data-i18n="currentSelection">Current selection</span>
-              <button id="clearSelection" type="button" data-i18n="clear">Clear</button>
+        <div id="controlBody" class="control-body">
+          <div class="control-grid">
+            <label class="control-field">
+              <span data-i18n="provider">Provider</span>
+              <select id="providerSelect">
+                <option value="deepseek">DeepSeek</option>
+                <option value="openai">OpenAI</option>
+              </select>
+            </label>
+            <label class="control-field model-field">
+              <span data-i18n="model">Model</span>
+              <input id="modelInput" type="text" value="deepseek-v4-flash" spellcheck="false" />
+            </label>
+            <label class="control-field">
+              <span data-i18n="uiLanguage">UI language</span>
+              <select id="uiLanguageSelect">
+                <option value="zh-CN">Chinese</option>
+                <option value="ja">Japanese</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label class="control-field">
+              <span data-i18n="outputLanguage">Explanation language</span>
+              <select id="languageSelect">
+                <option value="zh-CN">Chinese</option>
+                <option value="ja">Japanese</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+            <label class="control-field">
+              <span data-i18n="saveMode">Save mode</span>
+              <select id="noteSaveMode">
+                <option value="quote" data-i18n="saveQuote">Quote only</option>
+                <option value="quote-ai" data-i18n="saveQuoteAi">Quote + AI</option>
+              </select>
+            </label>
+            <label id="accessCodeRow" class="control-field access-row hidden">
+              <span id="accessCodeLabel">Access code</span>
+              <input id="accessCodeInput" type="password" placeholder="For online demo" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="selection-toolbar" aria-live="polite">
+            <div class="selection-preview">
+              <div class="selection-preview-header">
+                <span data-i18n="currentSelection">Current selection</span>
+                <button id="clearSelection" type="button" data-i18n="clear">Clear</button>
+              </div>
+              <p id="selectedText" class="selected-text">No text selected yet.</p>
             </div>
-            <p id="selectedText" class="selected-text">No text selected yet.</p>
-          </div>
 
-          <div class="quick-actions">
-            <button id="explainButton" type="button" data-i18n="explain">Explain</button>
-            <button id="translateButton" type="button" data-i18n="translate">Translate</button>
-            <button id="summarizeButton" type="button" data-i18n="summarizeContext">Summarize context</button>
-            <button id="fullSummaryButton" type="button" data-i18n="summarizeBook">Summarize book</button>
-            <button id="highlightButton" type="button" data-i18n="highlight">Highlight</button>
-            <button id="saveNoteButton" type="button" data-i18n="save">Save</button>
-          </div>
+            <div class="quick-actions">
+              <button id="explainButton" type="button" data-i18n="explain">Explain</button>
+              <button id="translateButton" type="button" data-i18n="translate">Translate</button>
+              <button id="summarizeButton" type="button" data-i18n="summarizeContext">Summarize context</button>
+              <button id="fullSummaryButton" type="button" data-i18n="summarizeBook">Summarize book</button>
+              <button id="highlightButton" type="button" data-i18n="highlight">Highlight</button>
+              <button id="saveNoteButton" type="button" data-i18n="save">Save</button>
+            </div>
 
-          <div class="panel-actions" aria-label="Workspace actions">
-            <button id="clearChatButton" type="button" data-i18n="clearChat">Clear chat</button>
-            <button id="clearNotesButton" type="button" data-i18n="clearNotes">Clear notes</button>
-            <button id="exportNotesButton" type="button" data-i18n="exportNotes">Export MD</button>
-            <button id="exportDocxButton" type="button" data-i18n="exportDocx">Export DOCX</button>
+            <div class="panel-actions" aria-label="Workspace actions">
+              <button id="clearChatButton" type="button" data-i18n="clearChat">Clear chat</button>
+              <button id="clearNotesButton" type="button" data-i18n="clearNotes">Clear notes</button>
+              <button id="exportNotesButton" type="button" data-i18n="exportNotes">Export MD</button>
+              <button id="exportDocxButton" type="button" data-i18n="exportDocx">Export DOCX</button>
+            </div>
           </div>
         </div>
       </section>
