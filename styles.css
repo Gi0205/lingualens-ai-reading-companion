@@ -68,9 +68,9 @@ button:disabled {
 }
 
 .topbar {
-  min-height: 76px;
+  min-height: 62px;
   flex: 0 0 auto;
-  padding: 14px 22px;
+  padding: 10px 18px;
   border-bottom: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.92);
   display: flex;
@@ -90,8 +90,8 @@ button:disabled {
 }
 
 .brand-mark {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   background: linear-gradient(135deg, #163b3a, #0f766e 52%, #c47f22);
   color: white;
@@ -110,7 +110,7 @@ button:disabled {
 }
 
 .brand h1 {
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1.1;
 }
 
@@ -158,12 +158,81 @@ button:disabled {
   width: 92px;
 }
 
+.control-strip {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 18;
+  display: grid;
+  gap: 8px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(247, 246, 242, 0.96);
+  backdrop-filter: blur(10px);
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: 132px minmax(160px, 1fr) 142px 164px minmax(140px, 180px);
+  gap: 8px;
+  align-items: end;
+}
+
+.control-field {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.control-field input,
+.control-field select {
+  width: 100%;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.selection-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) minmax(420px, 520px) minmax(260px, 360px);
+  gap: 8px;
+  align-items: stretch;
+}
+
+.selection-preview {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  padding: 7px 9px;
+}
+
+.selection-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.selection-preview-header button {
+  min-height: 24px;
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
 .workspace {
   flex: 1;
   min-height: 0;
   height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(460px, 540px);
+  grid-template-columns: minmax(0, 1fr) minmax(520px, 620px);
   overflow: hidden;
 }
 
@@ -191,8 +260,8 @@ button:disabled {
 
 .reader-header,
 .ai-header {
-  min-height: 72px;
-  padding: 14px 18px;
+  min-height: 62px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
@@ -243,7 +312,7 @@ button:disabled {
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 42px clamp(22px, 7vw, 92px) 80px;
+  padding: 32px clamp(22px, 7vw, 92px) 72px;
   outline: none;
   font-size: 18px;
   line-height: 1.82;
@@ -430,12 +499,12 @@ button:disabled {
 }
 
 .selected-text {
-  max-height: 82px;
-  margin: 8px 0 9px;
+  max-height: 42px;
+  margin: 4px 0 0;
   overflow: auto;
   white-space: pre-wrap;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .quick-actions {
@@ -452,8 +521,8 @@ button:disabled {
 }
 
 .quick-actions button {
-  min-height: 32px;
-  padding: 5px 7px;
+  min-height: 30px;
+  padding: 4px 7px;
   font-size: 12px;
   line-height: 1.2;
 }
@@ -466,9 +535,9 @@ button:disabled {
 
 .panel-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  padding: 0 14px 8px;
+  padding: 0;
 }
 
 .panel-actions button {
@@ -513,7 +582,7 @@ button:disabled {
 .messages,
 .notes-list {
   flex: 1;
-  min-height: 260px;
+  min-height: 340px;
   overflow: auto;
   overscroll-behavior: contain;
   padding: 14px;
@@ -682,7 +751,7 @@ button:disabled {
   display: none !important;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 980px) {
   html,
   body {
     height: auto;
@@ -711,6 +780,11 @@ button:disabled {
     grid-template-columns: 1fr;
     height: auto;
     overflow: visible;
+  }
+
+  .control-grid,
+  .selection-toolbar {
+    grid-template-columns: 1fr;
   }
 
   .reader-panel,
@@ -751,6 +825,10 @@ button:disabled {
   .ai-header {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .control-strip {
+    padding: 8px;
   }
 
   .reader-stats {

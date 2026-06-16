@@ -23,12 +23,14 @@ const UI_TEXT = {
     explain: "解释",
     translate: "翻译",
     summarizeContext: "总结上下文",
+    summarizeBook: "讲解全文",
     highlight: "高亮",
     removeHighlight: "取消高亮",
     save: "保存",
     clearChat: "清空聊天",
     clearNotes: "清空笔记",
-    exportNotes: "导出笔记",
+    exportNotes: "导出 MD",
+    exportDocx: "导出 DOCX",
     chat: "聊天",
     notes: "笔记",
     send: "发送",
@@ -64,11 +66,13 @@ const UI_TEXT = {
     bookReset: "当前书籍已重置，已保存的笔记仍然保留。",
     noExportNotes: "还没有可导出的笔记。",
     exportedNotes: "笔记已导出为 Markdown。",
+    exportedDocx: "笔记已导出为 DOCX。",
     loadingExplain: "正在用{language}生成讲解...",
     loadingAnswer: "正在用{language}回答...",
     explainThis: "解释这段",
     translateThis: "翻译这段",
     summarizeThis: "总结上下文",
+    summarizeBookThis: "讲解全文",
     missingKeyNextStep: "请先在 PowerShell 里设置对应服务商的 API Key，然后重新启动 run.ps1。",
     retryNextStep: "请稍后重试，或检查 PowerShell 窗口里的服务输出。",
     temporaryFailure: "AI 服务暂时不可用",
@@ -107,12 +111,14 @@ const UI_TEXT = {
     explain: "解説",
     translate: "翻訳",
     summarizeContext: "文脈を要約",
+    summarizeBook: "全文要約",
     highlight: "ハイライト",
     removeHighlight: "ハイライト解除",
     save: "保存",
     clearChat: "チャットを消去",
     clearNotes: "ノートを消去",
-    exportNotes: "ノートを出力",
+    exportNotes: "MD出力",
+    exportDocx: "DOCX出力",
     chat: "チャット",
     notes: "ノート",
     send: "送信",
@@ -148,11 +154,13 @@ const UI_TEXT = {
     bookReset: "現在の本文をリセットしました。保存済みノートは保持されています。",
     noExportNotes: "出力できるノートがまだありません。",
     exportedNotes: "ノートを Markdown として出力しました。",
+    exportedDocx: "ノートを DOCX として出力しました。",
     loadingExplain: "{language}で解説を生成中...",
     loadingAnswer: "{language}で回答中...",
     explainThis: "この部分を解説",
     translateThis: "この部分を翻訳",
     summarizeThis: "文脈を要約",
+    summarizeBookThis: "全文を要約",
     missingKeyNextStep: "PowerShell で対応する API Key を設定し、run.ps1 を再起動してください。",
     retryNextStep: "少し待ってから再試行するか、PowerShell のサービス出力を確認してください。",
     temporaryFailure: "AI サービスは一時的に利用できません",
@@ -191,12 +199,14 @@ const UI_TEXT = {
     explain: "Explain",
     translate: "Translate",
     summarizeContext: "Summarize context",
+    summarizeBook: "Summarize book",
     highlight: "Highlight",
     removeHighlight: "Remove highlight",
     save: "Save",
     clearChat: "Clear chat",
     clearNotes: "Clear notes",
-    exportNotes: "Export notes",
+    exportNotes: "Export MD",
+    exportDocx: "Export DOCX",
     chat: "Chat",
     notes: "Notes",
     send: "Send",
@@ -232,11 +242,13 @@ const UI_TEXT = {
     bookReset: "Current book reset. Saved notes were kept.",
     noExportNotes: "There are no notes to export yet.",
     exportedNotes: "Notes exported as Markdown.",
+    exportedDocx: "Notes exported as DOCX.",
     loadingExplain: "Generating explanation in {language}...",
     loadingAnswer: "Answering in {language}...",
     explainThis: "Explain this",
     translateThis: "Translate this",
     summarizeThis: "Summarize context",
+    summarizeBookThis: "Summarize book",
     missingKeyNextStep: "Set the API key for the selected provider in PowerShell, then restart run.ps1.",
     retryNextStep: "Try again later, or check the service output in PowerShell.",
     temporaryFailure: "AI service is temporarily unavailable",
@@ -336,11 +348,13 @@ const els = {
   explainButton: document.querySelector("#explainButton"),
   translateButton: document.querySelector("#translateButton"),
   summarizeButton: document.querySelector("#summarizeButton"),
+  fullSummaryButton: document.querySelector("#fullSummaryButton"),
   highlightButton: document.querySelector("#highlightButton"),
   saveNoteButton: document.querySelector("#saveNoteButton"),
   clearChatButton: document.querySelector("#clearChatButton"),
   clearNotesButton: document.querySelector("#clearNotesButton"),
   exportNotesButton: document.querySelector("#exportNotesButton"),
+  exportDocxButton: document.querySelector("#exportDocxButton"),
   chatTab: document.querySelector("#chatTab"),
   notesTab: document.querySelector("#notesTab"),
   chatView: document.querySelector("#chatView"),
@@ -402,6 +416,7 @@ function bindEvents() {
   els.explainButton.addEventListener("click", () => explainSelection("explain"));
   els.translateButton.addEventListener("click", () => explainSelection("translate"));
   els.summarizeButton.addEventListener("click", () => explainSelection("summarize"));
+  els.fullSummaryButton.addEventListener("click", summarizeBook);
   els.highlightButton.addEventListener("click", saveHighlight);
   els.saveNoteButton.addEventListener("click", saveCurrentNote);
   els.menuExplain.addEventListener("click", () => explainSelection("explain"));
@@ -412,6 +427,7 @@ function bindEvents() {
   els.clearChatButton.addEventListener("click", clearChat);
   els.clearNotesButton.addEventListener("click", clearNotes);
   els.exportNotesButton.addEventListener("click", exportNotesMarkdown);
+  els.exportDocxButton.addEventListener("click", exportNotesDocx);
 
   els.chatForm.addEventListener("submit", handleChatSubmit);
   els.chatInput.addEventListener("keydown", (event) => {
@@ -1158,6 +1174,7 @@ function renderSelection() {
   [els.explainButton, els.translateButton, els.summarizeButton, els.highlightButton, els.saveNoteButton].forEach((button) => {
     button.disabled = !hasSelection;
   });
+  els.fullSummaryButton.disabled = !state.bookText.trim();
   const highlightLabel = hasSelection && getMatchingHighlightForSelection()
     ? t("removeHighlight")
     : t("highlight");
@@ -1223,6 +1240,14 @@ async function handleChatSubmit(event) {
   await askAssistant(prompt, { loadingText: t("loadingAnswer", { language: getLanguageNativeName() }) });
 }
 
+async function summarizeBook() {
+  if (!state.bookText.trim()) return;
+  hideSelectionMenu();
+  addMessage("user", t("summarizeBookThis"));
+  const prompt = buildPrompt("bookSummary");
+  await askAssistant(prompt, { loadingText: t("loadingExplain", { language: getLanguageNativeName() }) });
+}
+
 function buildPrompt(mode, userText = "") {
   const outputLanguage = getLanguageLabel();
   const recentChat = state.messages
@@ -1238,29 +1263,65 @@ function buildPrompt(mode, userText = "") {
 
   const taskMap = {
     explain:
-      "Explain the selected text for a reader. Include: 1. natural translation or paraphrase in the output language; 2. key words or phrases; 3. meaning in context; 4. one useful follow-up question.",
+      "Explain only the selected text. Include a concise natural translation/paraphrase, key terms, contextual meaning, and one useful follow-up question.",
     translate:
-      "Translate the selected text into the output language. Then briefly explain the difference between a literal translation and a natural translation. Keep it concise.",
+      "Translate only the selected text into the output language. Provide the natural translation first. Add at most one short note for ambiguity or an important term if necessary. Do not compare literal translation vs natural translation.",
     summarize:
-      "Summarize the nearby context and explain how it relates to the selected text.",
+      "Summarize only the nearby context and explain how it relates to the selected text.",
+    bookSummary:
+      "Summarize the whole uploaded document from the provided source text. Give the main topic, 3-6 key points, and any visible structure such as sections or questions.",
     chat: `Answer the user's follow-up question: ${userText}`,
   };
+
+  const isBookSummary = mode === "bookSummary";
+  const sourceSection = isBookSummary
+    ? `Document source text:\n${buildBookSummarySource()}`
+    : [
+        `Selected text:\n${state.selectedText || "(none)"}`,
+        `Nearby context:\n${state.selectedContext || "(none)"}`,
+      ].join("\n\n");
 
   return [
     `Book title: ${state.bookTitle}`,
     `Output language: ${outputLanguage}`,
     `Task: ${taskMap[mode]}`,
-    `Selected text:\n${state.selectedText || "(none)"}`,
-    `Nearby context:\n${state.selectedContext || "(none)"}`,
+    sourceSection,
     `Recent chat:\n${recentChat || "(none)"}`,
     [
       "Requirements:",
       `- Write the whole answer in ${outputLanguage}.`,
-      "- Keep important source-language terms when useful.",
-      "- Do not invent facts that are not supported by the text.",
-      "- If you need to infer something, clearly mark it as an inference.",
+      "- Use only the selected text, nearby context, document source text, and recent chat shown in this prompt.",
+      "- Do not add background knowledge, examples, causes, author intent, names, or claims unless they are explicitly present in the provided text.",
+      "- If the provided text does not contain enough evidence, say that the information is not available in the text.",
+      "- Keep important source-language terms only when useful for understanding.",
+      "- Do not show chain-of-thought, hidden reasoning, or translation methodology.",
+      "- For translation tasks, do not include a section comparing literal and natural translation unless the user explicitly asks for it.",
+      "- Be concise and avoid over-explaining.",
     ].join("\n"),
   ].join("\n\n");
+}
+
+function buildBookSummarySource() {
+  const text = state.bookText.replace(/\s+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  if (text.length <= 24000) return text;
+
+  const head = text.slice(0, 9000);
+  const middleStart = Math.max(0, Math.floor(text.length / 2) - 3000);
+  const middle = text.slice(middleStart, middleStart + 6000);
+  const tail = text.slice(-9000);
+
+  return [
+    "[Beginning excerpt]",
+    head,
+    "",
+    "[Middle excerpt]",
+    middle,
+    "",
+    "[Ending excerpt]",
+    tail,
+    "",
+    "[Note: The document is long, so this summary is based on representative excerpts from the beginning, middle, and end.]",
+  ].join("\n");
 }
 
 async function askAssistant(input, options = {}) {
@@ -1621,6 +1682,24 @@ function exportNotesMarkdown() {
   addMessage("system", t("exportedNotes"));
 }
 
+function exportNotesDocx() {
+  if (!state.notes.length) {
+    addMessage("system", t("noExportNotes"));
+    return;
+  }
+
+  const blob = buildNotesDocxBlob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `${slugify(state.bookTitle || "lingualens")}-notes.docx`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  addMessage("system", t("exportedDocx"));
+}
+
 function buildNotesMarkdown() {
   const lines = [
     `# LinguaLens Notes - ${state.bookTitle || "Untitled"}`,
@@ -1675,6 +1754,225 @@ function buildNotesMarkdown() {
   }
 
   return lines.join("\n");
+}
+
+function buildNotesDocxBlob() {
+  const paragraphs = [
+    { text: `LinguaLens Notes - ${state.bookTitle || "Untitled"}`, heading: true },
+    { text: `Exported at: ${new Date().toLocaleString()}` },
+    { text: `Reading progress: ${getReadingProgressPercent()}%` },
+    { text: `Highlights: ${getCurrentBookHighlights().length}` },
+    { text: "" },
+  ];
+
+  state.notes.forEach((note, index) => {
+    paragraphs.push({ text: `${index + 1}. ${note.bookTitle || "Untitled"}`, heading: true });
+    paragraphs.push({ text: `Created: ${new Date(note.createdAt).toLocaleString()}` });
+    paragraphs.push({ text: `Provider: ${note.provider || "unknown"}` });
+    paragraphs.push({ text: `Model: ${note.model || "unknown"}` });
+    paragraphs.push({ text: `Output language: ${note.outputLanguage || "unknown"}` });
+    if (note.blockId) paragraphs.push({ text: `Block: ${note.blockId}` });
+    paragraphs.push({ text: "Quote", bold: true });
+    splitLines(note.quote).forEach((line) => paragraphs.push({ text: line }));
+    if (note.context) {
+      paragraphs.push({ text: "Context", bold: true });
+      splitLines(note.context).forEach((line) => paragraphs.push({ text: line }));
+    }
+    if (note.explanation) {
+      paragraphs.push({ text: "AI Explanation", bold: true });
+      splitLines(note.explanation).forEach((line) => paragraphs.push({ text: line }));
+    }
+    paragraphs.push({ text: "" });
+  });
+
+  const highlights = getCurrentBookHighlights();
+  if (highlights.length) {
+    paragraphs.push({ text: "Highlights", heading: true });
+    highlights.forEach((highlight, index) => {
+      paragraphs.push({ text: `Highlight ${index + 1}`, bold: true });
+      paragraphs.push({ text: `Created: ${new Date(highlight.createdAt).toLocaleString()}` });
+      if (highlight.blockId) paragraphs.push({ text: `Block: ${highlight.blockId}` });
+      splitLines(highlight.quote).forEach((line) => paragraphs.push({ text: line }));
+      paragraphs.push({ text: "" });
+    });
+  }
+
+  const documentXml = buildDocxDocumentXml(paragraphs);
+  const files = [
+    {
+      name: "[Content_Types].xml",
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`,
+    },
+    {
+      name: "_rels/.rels",
+      content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`,
+    },
+    {
+      name: "word/document.xml",
+      content: documentXml,
+    },
+  ];
+
+  return new Blob([createZip(files)], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  });
+}
+
+function buildDocxDocumentXml(paragraphs) {
+  const body = paragraphs.map((paragraph) => {
+    const runs = splitLines(paragraph.text).map((line) => {
+      const runProps = paragraph.heading
+        ? "<w:rPr><w:b/><w:sz w:val=\"32\"/></w:rPr>"
+        : paragraph.bold
+          ? "<w:rPr><w:b/></w:rPr>"
+          : "";
+      return `<w:r>${runProps}<w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r>`;
+    }).join("<w:r><w:br/></w:r>");
+    return `<w:p>${runs}</w:p>`;
+  }).join("");
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${body}
+    <w:sectPr>
+      <w:pgSz w:w="11906" w:h="16838"/>
+      <w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/>
+    </w:sectPr>
+  </w:body>
+</w:document>`;
+}
+
+function createZip(files) {
+  const encoder = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+
+  files.forEach((file) => {
+    const nameBytes = encoder.encode(file.name);
+    const data = encoder.encode(file.content);
+    const crc = crc32(data);
+    const localHeader = concatBytes(
+      uint32(0x04034b50),
+      uint16(20),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint32(crc),
+      uint32(data.length),
+      uint32(data.length),
+      uint16(nameBytes.length),
+      uint16(0),
+      nameBytes
+    );
+
+    localParts.push(localHeader, data);
+
+    centralParts.push(concatBytes(
+      uint32(0x02014b50),
+      uint16(20),
+      uint16(20),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint32(crc),
+      uint32(data.length),
+      uint32(data.length),
+      uint16(nameBytes.length),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint16(0),
+      uint32(0),
+      uint32(offset),
+      nameBytes
+    ));
+
+    offset += localHeader.length + data.length;
+  });
+
+  const centralDirectory = concatBytes(...centralParts);
+  const endRecord = concatBytes(
+    uint32(0x06054b50),
+    uint16(0),
+    uint16(0),
+    uint16(files.length),
+    uint16(files.length),
+    uint32(centralDirectory.length),
+    uint32(offset),
+    uint16(0)
+  );
+
+  return concatBytes(...localParts, centralDirectory, endRecord);
+}
+
+function crc32(data) {
+  const table = crc32.table || (crc32.table = buildCrc32Table());
+  let crc = -1;
+  for (let index = 0; index < data.length; index += 1) {
+    crc = (crc >>> 8) ^ table[(crc ^ data[index]) & 0xff];
+  }
+  return (crc ^ -1) >>> 0;
+}
+
+function buildCrc32Table() {
+  const table = new Uint32Array(256);
+  for (let index = 0; index < 256; index += 1) {
+    let value = index;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = value & 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+    }
+    table[index] = value >>> 0;
+  }
+  return table;
+}
+
+function concatBytes(...arrays) {
+  const length = arrays.reduce((sum, array) => sum + array.length, 0);
+  const output = new Uint8Array(length);
+  let offset = 0;
+  arrays.forEach((array) => {
+    output.set(array, offset);
+    offset += array.length;
+  });
+  return output;
+}
+
+function uint16(value) {
+  return new Uint8Array([value & 0xff, (value >>> 8) & 0xff]);
+}
+
+function uint32(value) {
+  return new Uint8Array([
+    value & 0xff,
+    (value >>> 8) & 0xff,
+    (value >>> 16) & 0xff,
+    (value >>> 24) & 0xff,
+  ]);
+}
+
+function splitLines(value) {
+  const text = String(value || "");
+  return text ? text.split(/\r?\n/) : [""];
+}
+
+function escapeXml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function blockquote(text) {
@@ -1766,9 +2064,11 @@ function setActiveTab(tab) {
 }
 
 function setBusy(isBusy) {
-  [els.sendButton, els.explainButton, els.translateButton, els.summarizeButton].forEach((button) => {
-    button.disabled = isBusy || (!state.selectedText && button !== els.sendButton);
+  [els.explainButton, els.translateButton, els.summarizeButton].forEach((button) => {
+    button.disabled = isBusy || !state.selectedText;
   });
+  els.fullSummaryButton.disabled = isBusy || !state.bookText.trim();
+  els.sendButton.disabled = isBusy;
 }
 
 function formatAssistantText(text) {
